@@ -20,6 +20,9 @@ documents/*
 
 # Captures de test
 interface_test.png
+interface_scroll.png
+viewer_test.png
+viewer_scroll.png
 
 # Rapports (garder le dossier)
 reports/*
