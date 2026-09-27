@@ -18,6 +18,9 @@ env/
 documents/*
 !documents/.gitkeep
 
+# Captures de test
+interface_test.png
+
 # Rapports (garder le dossier)
 reports/*
 !reports/.gitkeep
