@@ -1,18 +1,19 @@
 """
-Module d'analyse avec l'API Grok (xAI).
+Module d'analyse avec l'API IA gratuite Free.ai.
 
 Responsabilites :
-    - Envoyer le contenu du questionnaire a l'API Grok
+    - Envoyer le contenu du questionnaire a l'API IA
     - Utiliser le prompt de correction intelligente
-    - Recuperer la réponse JSON structurée
-    - Verifier que la réponse JSON est valide
-    - Retourner les résultats d'analyse
+    - Recuperer la reponse JSON structuree
+    - Verifier que la reponse JSON est valide
+    - Retourner les resultats d'analyse
 
-Documentation officielle xAI SDK :
-    https://docs.x.ai
-    SDK : pip install xai-sdk
-    Model : grok-4.7
-    Base URL : https://api.x.ai/v1
+Documentation Free.ai :
+    Base URL : https://api.free.ai/v1
+    Endpoint : POST /v1/chat/
+    Auth     : Bearer sk-free-...
+    SDK      : openai (compatible OpenAI)
+    Gratuit  : 1000 appels/mois, sans carte bancaire
 """
 
 import json
@@ -20,7 +21,7 @@ import os
 import sys
 from pathlib import Path
 
-# Ajouter le répertoire parent au chemin
+# Ajouter le repertoire parent au chemin
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
@@ -28,142 +29,173 @@ sys.path.insert(0, str(BASE_DIR))
 from dotenv import load_dotenv
 load_dotenv(BASE_DIR / ".env")
 
-# La clé API est chargee via .env - seul le serveur y a acces
-XAI_API_KEY = os.getenv("XAI_API_KEY")
+# La cle API est chargee via .env - seul le serveur y a acces
+FREEAI_API_KEY = os.getenv("FREEAI_API_KEY")
 
-# Configuration de l'API xAI
-XAI_BASE_URL = "https://api.x.ai/v1"
-XAI_MODEL = "grok-4.7"
+# Configuration de l'API Free.ai
+FREEAI_BASE_URL = "https://api.free.ai/v1"
+FREEAI_MODEL = "qwen3-8b"  # Modele gratuit auto-heberge
 
-# Vérification de la clé API
-if XAI_API_KEY is None or XAI_API_KEY == "TON_CLE_API_ICI":
+# Verification de la cle API
+if FREEAI_API_KEY is None or FREEAI_API_KEY == "TON_CLE_API_ICI":
     print(
-        "⚠️  XAI_API_KEY non configurée. "
-        "Remplace 'TON_CLE_API_ICI' dans .env par ta vraie clé API. "
-        "Obtenez-la sur https://console.x.ai/team/default/api-keys"
+        "WARNING: FREEAI_API_KEY non configuree. "
+        "Remplace 'TON_CLE_API_ICI' dans .env par ta vraie cle API. "
+        "Obtenez-la sur https://free.ai/signup/"
     )
-    XAI_API_KEY = None
+    FREEAI_API_KEY = None
 
 
 def obtenir_client():
-    """Crée un client xAI SDK pour communiquer avec l'API Grok.
+    """Cree un client compatible OpenAI pour communiquer avec Free.ai.
+
+    Free.ai est compatible OpenAI, on utilise donc le SDK openai
+    avec le base_url pointed sur api.free.ai.
 
     Returns:
-        xai_sdk.Client: Le client API xAI.
+        openai.OpenAI: Le client API Free.ai.
 
     Raises:
-        EnvironmentError: Si la clé API est absente.
+        EnvironmentError: Si la cle API est absente.
     """
-    if XAI_API_KEY is None:
+    if FREEAI_API_KEY is None:
         raise EnvironmentError(
-            "Clé API XAI manquante. Vérifie le fichier .env"
+            "Cle API Free.ai manquante. Verifie le fichier .env"
         )
 
-    from xai_sdk import Client
+    from openai import OpenAI
 
-    client = Client(api_key=XAI_API_KEY)
+    client = OpenAI(
+        api_key=FREEAI_API_KEY,
+        base_url=FREEAI_BASE_URL,
+    )
     return client
 
 
 def analyser_questionnaire(document_path):
-    """Analyse un questionnaire complet avec l'API Grok.
+    """Analyse un questionnaire complet avec l'API IA.
 
     Args:
         document_path (str): Chemin vers le fichier PDF ou Word.
 
     Returns:
-        dict: Résultat structuré avec les analyses de chaque question.
+        dict: Resultat structure avec les analyses de chaque question.
     """
     client = obtenir_client()
 
     # Lire le contenu du document
-    from server.document_handler import lire_pdf, lire_word, extraire_questions
+    from server.document_handler import lire_pdf, lire_word
 
     if document_path.endswith(".pdf"):
         texte = lire_pdf(document_path)
     elif document_path.endswith(".docx"):
         texte = lire_word(document_path)
     else:
-        raise ValueError("Format de fichier non supporté")
-
-    questions = extraire_questions(texte)
+        raise ValueError("Format de fichier non supporte")
 
     # Construire le prompt complet
-    prompt = construire_prompt(document_path, questions)
+    prompt = construire_prompt(texte)
 
-    # Envoyer à l'API Grok
-    chat = client.chat.create(model=XAI_MODEL)
-    from xai_sdk.chat import user as xai_user
-    chat.append(xai_user(prompt))
+    # Envoyer a l'API IA
+    reponse = client.chat.completions.create(
+        model=FREEAI_MODEL,
+        messages=[
+            {"role": "system", "content": "Tu es un correcteur academique intelligent."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.3,
+    )
 
-    # Récupérer la réponse
-    reponse = chat.sample().content
+    # Recuperer le texte de la reponse
+    texte_reponse = reponse.choices[0].message.content
 
-    # Parser la réponse JSON
-    resultat = parser_reponse_json(reponse)
+    # Parser la reponse JSON
+    resultat = parser_reponse_json(texte_reponse)
 
     return resultat
 
 
-def construire_prompt(document_path, questions=None):
-    """Construit le prompt de correction pour Grok.
+def construire_prompt(texte_document):
+    """Construit le prompt de correction pour l'IA.
 
-    Le prompt demande à Grok d'agir comme un correcteur académique
-    sans corrigé préenregistré.
+    Le prompt demande a l'IA d'agir comme un correcteur academique
+    sans corrige preenregistre.
 
     Args:
-        document_path (str): Chemin vers le fichier du questionnaire.
-        questions (list, optional): Liste des questions extraites.
+        texte_document (str): Le texte extrait du questionnaire.
 
     Returns:
-        str: Le prompt complet envoyé à l'API.
+        str: Le prompt complet envoye a l'API.
     """
-    prompt = """Tu es un correcteur académique intelligent.
+    prompt = """Tu es un correcteur academique intelligent.
+
+Voici un questionnaire avec les questions et les reponses de l'etudiant :
+
+--- DEBUT DU QUESTIONNAIRE ---
+""" + texte_document + """
+--- FIN DU QUESTIONNAIRE ---
 
 Pour chaque question du questionnaire, tu dois :
 1. Comprendre la question.
-2. Déterminer les connaissances et éléments essentiels attendus.
-3. Analyser la réponse de l'étudiant.
-4. Déterminer si la réponse est correcte.
-5. Déterminer si elle est partiellement correcte.
-6. Déterminer si elle est incorrecte.
-7. Déterminer si elle est hors sujet.
-8. Déterminer si aucune réponse n'a été fournie.
+2. Determiner les connaissances et elements essentiels attendus.
+3. Analyser la reponse de l'etudiant.
+4. Determiner si la reponse est correcte.
+5. Determiner si elle est partiellement correcte.
+6. Determiner si elle est incorrecte.
+7. Determiner si elle est hors sujet.
+8. Determiner si aucune reponse n'a ete fournie.
 9. Identifier les erreurs factuelles.
 10. Expliquer les anomalies.
-11. Ne considère PAS une différence de formulation comme une erreur.
-12. Évalue la réponse selon son contenu et non selon une correspondance mot-à-mot.
+11. Ne considere PAS une difference de formulation comme une erreur.
+12. Evalue la reponse selon son contenu et non selon une correspondance mot-a-mot.
 
-NE JAMAIS fournir une réponse correcte préenregistrée.
+NE JAMAIS fournir une reponse correcte preenregistree.
 
-Format de réponse attendu : JSON structuré avec :
-- document : nom du fichier
-- questions : liste de {number, question, student_answer, status, score, anomalies, explanation, missing_elements}
-- summary : {total_questions, correct, partial, incorrect, unanswered}
+Reponds UNIQUEMENT avec un JSON valide (sans texte avant ou apres) au format :
 
-Les valeurs de status possibles sont : "correct", "partial", "incorrect", "off_topic", "unanswered"
-
+{
+  "document": "nom_du_fichier",
+  "questions": [
+    {
+      "number": 1,
+      "question": "...",
+      "student_answer": "...",
+      "status": "correct|partial|incorrect|off_topic|unanswered",
+      "score": 0-100,
+      "anomalies": ["..."],
+      "explanation": "...",
+      "missing_elements": ["..."]
+    }
+  ],
+  "summary": {
+    "total_questions": 0,
+    "correct": 0,
+    "partial": 0,
+    "incorrect": 0,
+    "unanswered": 0
+  }
+}
 """
     return prompt
 
 
 def parser_reponse_json(reponse_texte):
-    """Parse la réponse de Grok en JSON structuré.
+    """Parse la reponse de l'IA en JSON structure.
 
     Args:
-        reponse_texte (str): Texte brut de la réponse Grok.
+        reponse_texte (str): Texte brut de la reponse.
 
     Returns:
-        dict: Résultat JSON parse.
+        dict: Resultat JSON parse.
     """
     try:
-        # Extraire le JSON de la réponse (au cas où il y aurait du texte avant/après)
+        # Extraire le JSON de la reponse (au cas ou il y aurait du texte avant/apres)
         debut = reponse_texte.find("{")
         fin = reponse_texte.rfind("}") + 1
-        if debut != -1 and fin != -1:
+        if debut != -1 and fin != -1 and fin > debut:
             json_str = reponse_texte[debut:fin]
             return json.loads(json_str)
     except json.JSONDecodeError as e:
-        print(f"⚠️  Erreur de parsing JSON : {e}")
+        print(f"WARNING: Erreur de parsing JSON : {e}")
 
-    return {"erreur": "Réponse JSON invalide", "brut": reponse_texte}
+    return {"erreur": "Reponse JSON invalide", "brut": reponse_texte}

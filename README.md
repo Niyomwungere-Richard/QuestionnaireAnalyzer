@@ -3,15 +3,15 @@
 ## Description
 
 Application Client/Serveur Python capable de recevoir un questionnaire au format PDF ou Word,
-d'analyser automatiquement les questions et reponses grace a l'API Grok (xAI),
+d'analyser automatiquement les questions et reponses grace a une API IA gratuite,
 de detecter les anomalies dans les reponses sans corrige preenregistre,
 puis de generer un rapport d'analyse.
 
 ## Architecture
 
 - CLIENT : Interface graphique tkinter + communication TCP
-- SERVEUR : Reception fichier + analyse Grok + generation rapport
-- GROK API : Correction intelligente sans corrige preenregistre
+- SERVEUR : Reception fichier + analyse IA + generation rapport
+- API IA : Correction intelligente sans corrige preenregistre (Free.ai, gratuit)
 
 ## Technologies
 
@@ -20,7 +20,7 @@ puis de generer un rapport d'analyse.
 - tkinter (interface graphique)
 - python-docx (fichiers Word)
 - PyMuPDF (fichiers PDF)
-- xai-sdk (API Grok / xAI)
+- openai (API IA compatible OpenAI - Free.ai)
 - python-dotenv (variables d'environnement)
 - reportlab (generation PDF)
 
@@ -29,9 +29,14 @@ puis de generer un rapport d'analyse.
 1. Cloner le projet
 2. Installer les dependances :
    pip install -r requirements.txt
-3. Configurer la clee API dans le fichier .env
+3. Configurer la cle API dans le fichier .env (voir API_KEY_GUIDE.md)
 4. Lancer le serveur : python server/server.py
 5. Lancer le client : python client/client.py
+
+## Tests
+
+- `python test_env.py` : Verifie le chargement de .env
+- `python test_grok.py` : Verifie la communication avec l'API IA
 
 ## Structure
 
@@ -50,7 +55,8 @@ puis de generer un rapport d'analyse.
 
 ## Securite
 
-- La clee API ne doit jamais etre partagee
+- La cle API ne doit jamais etre partagee
 - Le fichier .env est dans .gitignore
 - Les fichiers sont valides avant traitement
 - La connexion TCP est geree correctement
+- Seul le serveur communique avec l'API IA
