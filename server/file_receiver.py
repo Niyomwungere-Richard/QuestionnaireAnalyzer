@@ -45,7 +45,7 @@ def recevoir_fichier(connexion):
         ValueError: Si l'en-tete est invalide ou le fichier trop gros.
     """
     # ETAPE 1 : Lire l'en-tete (texte JSON termine par \n)
-    en_tete = lire_en_tete(connexion)
+    en_tete, reste_donnees = lire_en_tete(connexion)
 
     nom_fichier = en_tete.get("filename", "")
     taille = en_tete.get("size", 0)
@@ -77,7 +77,8 @@ def recevoir_fichier(connexion):
     print(f"      En-tete recu : {nom_fichier_securise} ({taille} octets)")
 
     # ETAPE 2 : Lire les donnees binaires
-    donnees = lire_donnees_exactes(connexion, taille)
+    # (on commence par le reste deja lu apres l'en-tete)
+    donnees = lire_donnees_exactes(connexion, taille, reste_donnees)
     print(f"      Donnees recues : {len(donnees)} octets")
 
     # ETAPE 3 : Sauvegarder le fichier
@@ -102,11 +103,17 @@ def lire_en_tete(connexion):
 
     L'en-tete est une ligne JSON terminee par \n.
 
+    ATTENTION : le premier recv() peut contenir a la fois l'en-tete
+    ET le debut des donnees du fichier. Il faut donc renvoyer aussi
+    ces donnees restantes, sinon elles seraient perdues.
+
     Args:
         connexion (socket.socket): La connexion.
 
     Returns:
-        dict: L'en-tete parse.
+        tuple: (en_tete, reste_donnees)
+            - en_tete (dict): L'en-tete parse.
+            - reste_donnees (bytes): Le debut des donnees fichier deja lu.
 
     Raises:
         ValueError: Si l'en-tete est invalide.
@@ -128,15 +135,18 @@ def lire_en_tete(connexion):
     parties = buffer.split(b"\n", 1)
     en_tete_brut = parties[0].decode("utf-8")
 
+    # Les donnees restantes sont le DEBUT du fichier
+    reste_donnees = parties[1] if len(parties) > 1 else b""
+
     try:
         en_tete = json.loads(en_tete_brut)
     except json.JSONDecodeError as e:
         raise ValueError(f"En-tete JSON invalide : {e}")
 
-    return en_tete
+    return en_tete, reste_donnees
 
 
-def lire_donnees_exactes(connexion, taille_totale):
+def lire_donnees_exactes(connexion, taille_totale, donnees_initiales=b""):
     """Lit exactement le nombre d'octets demande.
 
     TCP peut livrer les donnees par morceaux.
@@ -145,6 +155,7 @@ def lire_donnees_exactes(connexion, taille_totale):
     Args:
         connexion (socket.socket): La connexion.
         taille_totale (int): Nombre exact d'octets a lire.
+        donnees_initiales (bytes, optional): Deja lu (reste de l'en-tete).
 
     Returns:
         bytes: Les donnees completes.
@@ -152,8 +163,13 @@ def lire_donnees_exactes(connexion, taille_totale):
     Raises:
         ValueError: Si la connexion est fermee avant la fin.
     """
-    donnees = b""
-    taille_recue = 0
+    donnees = donnees_initiales
+    taille_recue = len(donnees_initiales)
+
+    # Si on a deja recu plus que prevu, tronquer (securite)
+    if taille_recue > taille_totale:
+        donnees = donnees[:taille_totale]
+        taille_recue = taille_totale
 
     while taille_recue < taille_totale:
         # Lire au maximum TAILLE_CHUNK octets ou ce qui reste
