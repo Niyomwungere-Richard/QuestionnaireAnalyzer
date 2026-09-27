@@ -14,11 +14,15 @@ venv/
 .venv/
 env/
 
-# Fichiers de rapport
-reports/*.pdf
-
-# Documents temporaires
+# Documents temporaires (garder le dossier via .gitkeep)
 documents/*
+!documents/.gitkeep
+
+# Rapports (garder le dossier)
+reports/*
+!reports/.gitkeep
+client/reports/*
+!client/reports/.gitkeep
 
 # OS
 Thumbs.db
