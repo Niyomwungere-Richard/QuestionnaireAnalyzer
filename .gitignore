@@ -1,0 +1,35 @@
+# Clé API SECRETE - ne jamais partager
+.env
+
+# Fichiers Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environnement virtuel
+venv/
+.venv/
+env/
+
+# Fichiers de rapport
+reports/*.pdf
+
+# Documents temporaires
+documents/*
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependencies
+*.egg
+*.whl

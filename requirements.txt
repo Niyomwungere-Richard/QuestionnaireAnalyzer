@@ -1,0 +1,5 @@
+python-docx
+PyMuPDF
+xai-sdk
+python-dotenv
+reportlab
