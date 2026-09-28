@@ -23,6 +23,11 @@ interface_test.png
 interface_scroll.png
 viewer_test.png
 viewer_scroll.png
+config_window.png
+server_window.png
+
+# Configuration locale de la machine (unique par poste)
+config.json
 
 # Rapports (garder le dossier)
 reports/*

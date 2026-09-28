@@ -46,7 +46,14 @@ COULEUR_ERREUR = "#e74c3c"
 class Application(tk.Tk):
     """Fenetre principale de l'application Client."""
 
-    def __init__(self):
+    def __init__(self, host=None, port=None, on_reconfigurer=None):
+        """Cree la fenetre client.
+
+        Args:
+            host (str, optional): Adresse du serveur depuis config.json.
+            port (int, optional): Port du serveur depuis config.json.
+            on_reconfigurer (callable, optional): Pour changer de role.
+        """
         super().__init__()
 
         # Parametres de la fenetre
@@ -61,6 +68,10 @@ class Application(tk.Tk):
         self.analyse_en_cours = False
         self.chemin_rapport = None
         self.fenetre_viewer = None
+        self.on_reconfigurer = on_reconfigurer
+        self._host_initial = host if host else HOST_DEFAUT
+        self._port_initial = port if port else PORT_DEFAUT
+        self.reconfiguration_demandee = False
 
         # Construire l'interface
         self._construire_interface()
@@ -205,7 +216,7 @@ class Application(tk.Tk):
             font=("Helvetica", 10),
         ).grid(row=0, column=0, sticky="w", padx=(0, 6), pady=3)
 
-        self.var_host = tk.StringVar(value=HOST_DEFAUT)
+        self.var_host = tk.StringVar(value=str(self._host_initial))
         tk.Entry(
             cadre_serveur,
             textvariable=self.var_host,
@@ -220,13 +231,28 @@ class Application(tk.Tk):
             font=("Helvetica", 10),
         ).grid(row=0, column=2, sticky="w", padx=(20, 6), pady=3)
 
-        self.var_port = tk.StringVar(value=str(PORT_DEFAUT))
+        self.var_port = tk.StringVar(value=str(self._port_initial))
         tk.Entry(
             cadre_serveur,
             textvariable=self.var_port,
             width=8,
             font=("Helvetica", 10),
         ).grid(row=0, column=3, sticky="w", pady=3)
+
+        # Bouton de reconfiguration du role (ETAPE 14)
+        if self.on_reconfigurer is not None:
+            tk.Button(
+                cadre_serveur,
+                text="⚙ Changer de role",
+                font=("Helvetica", 9),
+                bg="#f39c12",
+                fg="white",
+                relief="flat",
+                padx=8,
+                pady=4,
+                cursor="hand2",
+                command=self._reconfigurer_role,
+            ).grid(row=0, column=4, padx=(20, 0), pady=3)
 
         # ============================================================
         # SECTION 2 : FICHIER
@@ -736,6 +762,28 @@ class Application(tk.Tk):
         self.bouton_enregistrer.configure(state="disabled")
         self.bouton_ouvrir.configure(state="disabled")
         self.chemin_rapport = None
+
+    def _reconfigurer_role(self):
+        """Retourne a la fenetre de configuration (changement de role)."""
+        if self.analyse_en_cours:
+            messagebox.showinfo(
+                "Analyse en cours",
+                "Attendrez la fin de l'analyse avant de reconfigurer.",
+            )
+            return
+
+        if not messagebox.askyesno(
+            "Changer de role",
+            "Voulez-vous changer le role de cette machine ?\n\n"
+            "Le programme demarrera ensuite selon le nouveau role.",
+        ):
+            return
+
+        callback = self.on_reconfigurer
+        self.reconfiguration_demandee = True
+        self.destroy()
+        if callback:
+            callback()
 
     # ============================================================
     # UTILITAIRES
