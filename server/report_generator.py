@@ -17,9 +17,18 @@ Utilisation :
 
 from pathlib import Path
 from datetime import datetime
+import sys
 
-# Configuration
-DOSSIER_REPORTS = Path(__file__).resolve().parent.parent / "reports"
+# Chemins compatibles script ET .exe (ETAPE 15)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent.parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
+
+from paths import DOSSIER_RAPPORTS
+
+# Dossier de sortie des rapports
+DOSSIER_REPORTS = DOSSIER_RAPPORTS
 
 
 def generer_rapport(resultat_analyse, dossier_sortie=None):

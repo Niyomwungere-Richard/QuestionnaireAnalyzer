@@ -4,3 +4,6 @@ openai
 python-dotenv
 reportlab
 pillow
+
+# --- Construction de l'executable Windows (ETAPE 15) ---
+pyinstaller

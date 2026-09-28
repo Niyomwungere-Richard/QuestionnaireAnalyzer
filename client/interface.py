@@ -16,9 +16,13 @@ import threading
 import subprocess
 from pathlib import Path
 
-# Ajouter le repertoire parent au sys.path
-BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE_DIR))
+# Resolution des chemins compatible script ET .exe (ETAPE 15)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent.parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
+
+from paths import BASE_DIR
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox

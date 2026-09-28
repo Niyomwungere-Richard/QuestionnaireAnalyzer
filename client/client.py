@@ -14,10 +14,19 @@ Utilisation :
 
 import socket
 import json
+import sys
 from pathlib import Path
 
+# Chemins compatibles script ET .exe (ETAPE 15)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent.parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
+
+from paths import DOSSIER_RAPPORTS_CLIENT
+
 # Dossier de sortie des rapports
-DOSSIER_REPORTS = Path(__file__).resolve().parent / "reports"
+DOSSIER_REPORTS = DOSSIER_RAPPORTS_CLIENT
 
 # Configuration par defaut
 HOST_DEFAUT = "127.0.0.1"

@@ -21,8 +21,10 @@ import json
 import socket
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-CHEMIN_CONFIG = BASE_DIR / "config.json"
+# Chemins compatibles script ET .exe (ETAPE 15)
+from paths import BASE_DIR, CHEMIN_CONFIG as _CHEMIN_FICHIER
+
+CHEMIN_CONFIG = _CHEMIN_FICHIER
 
 # Configuration par defaut (aucun role choisi)
 CONFIG_DEFAUT = {

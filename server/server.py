@@ -29,9 +29,13 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Ajouter le repertoire parent au sys.path
-BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE_DIR))
+# Resolution des chemins compatible script ET .exe (ETAPE 15)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent.parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
+
+from paths import BASE_DIR
 
 from server.file_receiver import recevoir_fichier, verifier_fichier
 from server.document_handler import document_vers_json
@@ -417,9 +421,19 @@ def demarrer_serveur(host=None, port=None, journal=None,
         log("")
         log("[SERVEUR] Arret par l'utilisateur")
     except OSError as e:
-        log(f"[ERREUR] {e}")
+        # Si arreter_serveur() a ete appele (bouton Reconfigurer /
+        # Quitter / Redemarrer), le socket est ferme volontairement :
+        # ce n'est PAS une erreur.
+        if socket_serveur is None:
+            log("[SERVEUR] Arret demande (socket libere)")
+        else:
+            log(f"[ERREUR] {e}")
     finally:
-        serveur.close()
+        try:
+            serveur.close()
+        except Exception:
+            pass
+        socket_serveur = None
         log("[SERVEUR] Socket ferme")
 
     return serveur

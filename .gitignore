@@ -25,6 +25,11 @@ viewer_test.png
 viewer_scroll.png
 config_window.png
 server_window.png
+exe_server.png
+
+# Construction de l'executable (ETAPE 15)
+# (build/ et dist/ deja ignores ci-dessus)
+*.exe
 
 # Configuration locale de la machine (unique par poste)
 config.json

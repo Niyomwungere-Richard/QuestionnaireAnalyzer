@@ -1,0 +1,173 @@
+# Guide de l'exécutable Windows (.exe)
+
+## 1. De quoi a-t-on besoin ?
+
+### Pour **construire** l'exe (une seule machine suffit)
+
+| Besoin | Détail |
+|---|---|
+| **Python** | 3.10+ installé (ici 3.14) |
+| **PyInstaller** | `pip install pyinstaller` |
+| **Les dépendances** | `pip install -r requirements.txt` |
+| Le source du projet | dossier `QuestionnaireAnalyzer/` |
+
+> ⚠️ **Il ne faut PAS Python sur les machines de destination.**
+> C'est tout l'intérêt du `.exe` : il embarque l'interpréteur et
+> toutes les bibliothèques.
+
+### Pour **exécuter** l'exe (machine serveur)
+
+| Besoin | Détail |
+|---|---|
+| Windows 10/11 64 bits | rien d'autre à installer |
+| **Le fichier `.env`** | placé **à côté** du `.exe` — contient `FREEAI_API_KEY` |
+
+### Pour **exécuter** l'exe (machine client)
+
+| Besoin | Détail |
+|---|---|
+| Windows 10/11 64 bits | rien d'autre à installer |
+| Aucun fichier supplémentaire | tout est créé au premier lancement |
+
+---
+
+## 2. Construire l'exe
+
+### Méthode A — script automatique
+
+```bat
+build.bat
+```
+
+### Méthode B — manuelle
+
+```bat
+python -m PyInstaller --noconfirm AnalyseurQuestionnaire.spec
+```
+
+### Résultat
+
+```
+QuestionnaireAnalyzer/
+├── dist/
+│   └── AnalyseurQuestionnaire.exe   ← LE FICHIER À DISTRIBUER
+├── build/                           (temporaire, supprimable)
+└── AnalyseurQuestionnaire.spec      (recette de construction)
+```
+
+### Modifier les réglages
+
+Dans `AnalyseurQuestionnaire.spec` :
+
+```python
+CONSOLE = True    # fenêtre noire visible (logs serveur) — par défaut
+CONSOLE = False   # interface graphique seule (plus propre)
+```
+
+Puis relancer `build.bat`.
+
+---
+
+## 3. Déployer sur le réseau
+
+### Sur la machine SERVEUR
+
+```
+1. Copier  AnalyseurQuestionnaire.exe
+2. Copier  .env          (la clé API)   ← INDISPENSABLE
+3. Double-cliquer sur AnalyseurQuestionnaire.exe
+4. Choisir le rôle SERVEUR
+5. Noter l'adresse affichée (ex : 192.168.99.42 : 5001)
+6. Autoriser Python/Windows dans le pare-feu (voir §5)
+```
+
+### Sur la machine CLIENT
+
+```
+1. Copier  AnalyseurQuestionnaire.exe   (SEUL fichier nécessaire)
+2. Double-cliquer
+3. Choisir le rôle CLIENT
+4. Saisir l'adresse du serveur (ex : 192.168.99.42)
+5. Cliquer sur "Tester la connexion"
+6. Envoyer un questionnaire
+```
+
+---
+
+## 4. Où l'exe écrit-il ses fichiers ?
+
+**Point technique important** : en mode exécutable, le code est extrait
+dans un dossier temporaire (`_MEIxxxx`). Le module `paths.py` détecte ce
+cas et utilise le **dossier de l'executable** :
+
+```
+Dossier du .exe/
+├── AnalyseurQuestionnaire.exe
+├── .env                  ← clé API (serveur seulement)
+├── config.json           ← créé au 1er lancement (rôle, IP)
+├── documents/            ← créé automatiquement (fichiers reçus)
+├── reports/              ← créé automatiquement (rapports serveur)
+└── client/reports/       ← créé automatiquement (rapports reçus)
+```
+
+Tous ces dossiers sont créés automatiquement par `preparer_dossiers()`.
+
+---
+
+## 5. Pare-feu Windows (indispensable pour le LAN)
+
+Sans autorisation, le serveur sera **invisible** des autres machines :
+
+1. Au premier lancement Windows affiche un bandeau
+   *« Réseau détecté »* → cliquer → **Réseau doméstique** ou **Réseau de travail**
+2. Si aucune fenêtre n'apparaît :
+   ```
+   Panneau de configuration → Pare-feu Windows → Autoriser une application
+   → Cocher « AnalyseurQuestionnaire » pour les réseaux privés
+   ```
+3. Ou en ligne de commande (**administrateur**) :
+   ```powershell
+   New-NetFirewallRule -DisplayName "QuestionnaireAnalyzer" `
+       -Direction Inbound -Program "C:\chemin\AnalyseurQuestionnaire.exe" `
+       -Profile Private -Action Allow
+   ```
+
+Vérification depuis le client : bouton **🔌 Tester la connexion**.
+
+---
+
+## 6. Problèmes courants
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| *« Échec de l'analyse : erreur IA 401 »* | `.env` absent ou clé fausse | Placer `.env` à côté du `.exe` |
+| *« Aucune question détectée »* | Document vide / format non lu | Vérifier le PDF/Word |
+| *« pas de reponse (machine eteinte…) »* | Pare-feu ou mauvaise IP | §5 + vérifier l'IP |
+| *« Le port 5001 est déjà utilisé »* | Un ancien exe tourne | Fermer les autres instances |
+| Windows affiche *« PC protégé »* | Exe non signé | **Informations → Exécuter quand même** |
+| L'exe ne démarre pas | Antivirus bloque | Ajouter en exception |
+| Console vide puis fermeture immédiate | Erreur au lancement | Lancer depuis un terminal : `AnalyseurQuestionnaire.exe` pour voir l'erreur |
+
+### Taille attendue
+
+Environ **53 Mo** (Python 3.14 + tkinter + PyMuPDF + reportlab + Pillow
+embarqués). C'est normal pour un exécutable Python autonome.
+
+> Pour réduire la taille : `upx=True` dans le `.spec` (nécessite UPX),
+> ou `CONSOLE = False` et suppression d'`excludes` inutiles.
+
+---
+
+## 7. Checklist de livraison
+
+```
+[ ] python -m PyInstaller --noconfirm AnalyseurQuestionnaire.spec
+[ ] dist/AnalyseurQuestionnaire.exe existe
+[ ] L'exe se lance et affiche la fenêtre de configuration
+[ ] config.json se crée À CÔTÉ de l'exe (pas dans %TEMP%)
+[ ] Sur le serveur : .env présent à côté de l'exe
+[ ] Le serveur s'ouvre sur 0.0.0.0:5001
+[ ] Le client atteint le serveur (bouton Tester la connexion)
+[ ] Pare-feu autorisé
+[ ] Un envoi complet produit un rapport PDF
+```

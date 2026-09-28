@@ -21,13 +21,19 @@ import os
 import sys
 from pathlib import Path
 
-# Ajouter le repertoire parent au chemin
-BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE_DIR))
+# Ajouter le repertoire parent au chemin (mode script uniquement)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent.parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
+
+# Chemins compatibles script ET .exe (ETAPE 15)
+from paths import CHEMIN_ENV
 
 # Charger les variables d'environnement depuis .env
+# (en mode .env le fichier doit se trouver A COTE du .exe)
 from dotenv import load_dotenv
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(CHEMIN_ENV)
 
 # La cle API est chargee via .env - seul le serveur y a acces
 FREEAI_API_KEY = os.getenv("FREEAI_API_KEY")

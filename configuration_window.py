@@ -25,8 +25,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(BASE_DIR))
+# Resolution des chemins compatible script ET .exe (ETAPE 15)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
+
+from paths import BASE_DIR
 
 from config_manager import (
     charger_config,

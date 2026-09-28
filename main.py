@@ -26,9 +26,13 @@ Utilisation :
 import sys
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(BASE_DIR))
+# Resolution des chemins compatible script ET .exe (ETAPE 15)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
 
+from paths import BASE_DIR, preparer_dossiers, information
 from config_manager import charger_config, reinitialiser
 
 
@@ -88,9 +92,14 @@ def lancer_client(config):
 
 def main():
     """Boucle principale : dispatch selon le role configure."""
+    # Creer les dossiers de donnees s'ils manquent (utile en .exe)
+    preparer_dossiers()
+
     print()
     print("=" * 55)
     print("  INTELLIGENT QUESTIONNAIRE ANALYZER")
+    print("=" * 55)
+    print(f"  {information()}")
     print("=" * 55)
     print()
 

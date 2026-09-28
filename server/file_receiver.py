@@ -15,10 +15,16 @@ Pourquoi ce protocole ?
 
 import json
 import os
+import sys
 from pathlib import Path
 
-# Dossier ou sauvegarder les fichiers recus
-DOSSIER_DOCUMENTS = Path(__file__).resolve().parent.parent / "documents"
+# Chemins compatibles script ET .exe (ETAPE 15)
+if not getattr(sys, "frozen", False):
+    _BASE = Path(__file__).resolve().parent.parent
+    if str(_BASE) not in sys.path:
+        sys.path.insert(0, str(_BASE))
+
+from paths import DOSSIER_DOCUMENTS
 
 # Taille maximale d'un fichier (10 Mo)
 TAILLE_MAX = 10 * 1024 * 1024
@@ -82,7 +88,7 @@ def recevoir_fichier(connexion):
     print(f"      Donnees recues : {len(donnees)} octets")
 
     # ETAPE 3 : Sauvegarder le fichier
-    DOSSIER_DOCUMENTS.mkdir(exist_ok=True)
+    DOSSIER_DOCUMENTS.mkdir(parents=True, exist_ok=True)
     chemin_sauvegarde = DOSSIER_DOCUMENTS / nom_fichier_securise
 
     with open(chemin_sauvegarde, "wb") as f:

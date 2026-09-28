@@ -58,6 +58,25 @@ Seul le serveur communique avec l'API IA : la cle n'existe que sur SA machine.
 3. Configurer la cle API dans le fichier `.env` (voir API_KEY_GUIDE.md)
    — uniquement sur la machine qui fera office de SERVEUR
 
+## Creer l'exécutable Windows (.exe)
+
+```
+build.bat
+```
+
+ou manuellement :
+
+```
+pip install pyinstaller
+python -m PyInstaller --noconfirm AnalyseurQuestionnaire.spec
+```
+
+Resultat : `dist/AnalyseurQuestionnaire.exe` (~53 Mo, autonome —
+**Python n'est pas necessaire** sur les machines de destination).
+
+Voir **EXE_GUIDE.md** pour le deploiement reseau, le pare-feu et
+le degrossage des problemes courants.
+
 ## Lancement (multimachine)
 
 ```
