@@ -292,6 +292,38 @@ class FenetreConfiguration(tk.Tk):
             wraplength=600,
         ).pack(fill="x", pady=(0, 10))
 
+        # --- Option ETAPE 16 : demarrage direct ---
+        cadre_option = tk.Frame(cadre, bg=COULEUR_FOND)
+        cadre_option.pack(fill="x", pady=(0, 6))
+
+        self.var_direct = tk.BooleanVar(
+            value=bool(self.config_existante.get("demarrage_direct", False))
+        )
+        tk.Checkbutton(
+            cadre_option,
+            text="▷  Démarrer directement avec ce rôle"
+                 "  (ne plus redemander)",
+            variable=self.var_direct,
+            font=("Helvetica", 9),
+            bg=COULEUR_FOND,
+            fg="#555555",
+            selectcolor="white",
+            activebackground=COULEUR_FOND,
+            anchor="w",
+            command=self._maj_option,
+        ).pack(anchor="w")
+
+        self.var_info_option = tk.StringVar()
+        tk.Label(
+            cadre_option,
+            textvariable=self.var_info_option,
+            font=("Helvetica", 8, "italic"),
+            bg=COULEUR_FOND,
+            fg="#888888",
+            anchor="w",
+            justify="left",
+        ).pack(anchor="w", padx=(26, 0))
+
         # --- Bouton principal ---
         self.bouton_lancer = tk.Button(
             cadre,
@@ -319,6 +351,7 @@ class FenetreConfiguration(tk.Tk):
 
         # Affichage initial
         self._maj_affichage()
+        self._maj_option()
 
     def _ligne(self, parent, etiquette, valeur):
         """Ajoute une ligne etiquette/valeur."""
@@ -341,6 +374,20 @@ class FenetreConfiguration(tk.Tk):
     # ============================================================
     # LOGIQUE
     # ============================================================
+    def _maj_option(self):
+        """Affiche l'aide selon la case 'demarrage direct'."""
+        if self.var_direct.get():
+            self.var_info_option.set(
+                "La prochaine fois, le programme demarrera directement "
+                "avec ce role\n(sans poser de question)."
+            )
+        else:
+            self.var_info_option.set(
+                "Cette fenetre s'affichera a chaque demarrage : "
+                "utile pour lancer sur la MEME machine\nune instance "
+                "SERVEUR et une instance CLIENT en meme temps."
+            )
+
     def _maj_affichage(self):
         """Montre le cadre correspondant au role choisi."""
         role = self.var_role.get()
@@ -453,7 +500,13 @@ class FenetreConfiguration(tk.Tk):
             ip_serveur = "0.0.0.0"  # le serveur n'a pas besoin d'une IP
 
         # Sauvegarder
-        config = configurer(role, port=port, serveur_ip=ip_serveur)
+        demarrage_direct = bool(self.var_direct.get())
+        config = configurer(
+            role,
+            port=port,
+            serveur_ip=ip_serveur,
+            demarrage_direct=demarrage_direct,
+        )
 
         if role == "serveur":
             info = (
@@ -467,6 +520,13 @@ class FenetreConfiguration(tk.Tk):
                 f"Machine CLIENT enregistree.\n\n"
                 f"Serveur cible : {ip_serveur} : {port}\n\n"
                 f"Demarrage du client..."
+            )
+
+        if not demarrage_direct:
+            info += (
+                "\n\nAstuce : cette fenetre s'affichera au prochain "
+                "demarrage,\npermettant de lancer une instance SERVEUR "
+                "ET une instance CLIENT\nsur cette meme machine."
             )
 
         messagebox.showinfo("Configuration enregistree", info, parent=self)

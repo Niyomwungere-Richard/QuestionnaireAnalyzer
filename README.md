@@ -83,15 +83,52 @@ le degrossage des problemes courants.
 python main.py
 ```
 
-Au premier lancement, une **fenetre de configuration** demande le role de la machine :
+Une **fenetre de configuration** demande le role de la machine
+(a chaque demarrage par defaut) :
 
 | Role | Comportement |
 |---|---|
-| **SERVEUR** | Ecoute sur `0.0.0.0:5001` (toutes les cartes reseau), affiche l'IP a donner aux clients, journalise plusieurs requetes simultanees |
+| **SERVEUR** | Ecoute sur `0.0.0.0:5001` (toutes les cartes reseau), affiche l'IP a donner aux clients, journalise plusieurs requetes simultanees, **detecte les machines du reseau** |
 | **CLIENT** | Saisie de l'IP de la machine serveur, test de connexion, envoi du questionnaire, visualisation puis enregistrement du rapport |
 
 Le choix est memorise dans `config.json` (un fichier par machine, non versionne).
 Bouton **"Changer de role"** / **"Reconfigurer"** disponible dans les deux modes.
+
+### Deux instances sur la MEME machine (serveur + client)
+
+Cochez **"▷ Demarrer directement avec ce role"** pour ne plus
+redemander... ou laissez decoche et relancez le programme pour
+choisir un **autre role** :
+
+```
+1. double-clic  ->  choisir SERVEUR   (instance 1)
+2. double-clic  ->  choisir CLIENT    (instance 2)
+```
+
+Ou directement en ligne de commande (sans fenetre de choix) :
+
+```bat
+AnalyseurQuestionnaire.exe --serveur
+AnalyseurQuestionnaire.exe --client --serveur-ip=127.0.0.1
+AnalyseurQuestionnaire.exe --aide
+```
+
+> En mode ligne de commande, `config.json` n'est PAS modifie :
+> les deux instances ne se marchent pas dessus.
+
+### Detection des machines disponibles (serveur)
+
+La fenetre serveur contient un bouton
+**"🌐 Detecter les machines disponibles sur le reseau"** :
+
+1. Recupere l'IP locale + le **masque de sous-reseau**
+2. Genere les adresses du sous-reseau (max /24)
+3. **Balayage parallele par ping** (ThreadPoolExecutor, 64 fils)
+4. Test du port du service sur chaque machine en vie
+5. Resolution DNS inverse (nom reseau)
+
+Resultat affiche dans un tableau : `IP | Nom | Port | Etat`
+(🟢 ma machine / 🔵 joignable / 🔴 service non detecte / ⚪ hors ligne).
 
 ### Exemple concret
 
@@ -99,6 +136,8 @@ Bouton **"Changer de role"** / **"Reconfigurer"** disponible dans les deux modes
 Machine A (serveur, IP 192.168.99.42) : python main.py -> role SERVEUR
 Machine B (client,  IP 192.168.99.119): python main.py -> role CLIENT
                                          et saisir 192.168.99.42
+Meme machine                          : python main.py --serveur
+                                        python main.py --client --serveur-ip=127.0.0.1
 ```
 
 ## Tests
@@ -110,13 +149,19 @@ Machine B (client,  IP 192.168.99.119): python main.py -> role CLIENT
 - `python test_report.py` : Generation du rapport PDF
 - `python test_integration.py` : Pipeline complet Client -> Serveur -> IA -> rapport
 - `python test_multi_clients.py` : Plusieurs clients simultanes (ETAPE 14)
+- `python test_demarrage.py` : Arguments CLI + config demarrage (ETAPE 16)
+- `python test_reseau_ui.py` : Balayage du sous-reseau (ETAPE 16)
+- `python test_installateur.py` : Logique d'installation (ETAPE 16)
 
 ## Structure
 
-- `main.py` : point d'entree, dispatch selon le role
+- `main.py` : point d'entree, arguments CLI, dispatch selon le role
+- `paths.py` : chemins compatibles script ET .exe (ETAPE 15)
 - `config_manager.py` : configuration locale + detection reseau + test connexion
 - `configuration_window.py` : fenetre de choix du role
-- `server_window.py` : fenetre serveur (journal + statistiques)
+- `network_scanner.py` : balayage du sous-reseau (ETAPE 16)
+- `server_window.py` : fenetre serveur (journal + statistiques + scan reseau)
+- `installateur.py` : installateur graphique + mode silencieux (ETAPE 16)
 - `client/` : code client (interface, visualiseur, communication TCP)
 - `server/` : code serveur (reception, lecture, analyse IA, rapport)
 - `documents/` : fichiers recus / de test

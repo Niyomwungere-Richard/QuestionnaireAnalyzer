@@ -32,6 +32,7 @@ from paths import BASE_DIR
 
 import server.server as module_serveur
 from config_manager import obtenir_adresses_ip, obtenir_nom_machine
+from network_scanner import reseau_local, scanner_reseau
 
 # Couleurs
 COULEUR_FOND = "#f4f6f7"
@@ -43,6 +44,311 @@ COULEUR_ATTENTE = "#f39c12"
 
 COULEUR_JOURNAL = "#1e1e1e"
 COULEUR_TEXTE_JOURNAL = "#d4d4d4"
+
+
+# ============================================================
+# FENETRE DE DETECTION RESEAU (ETAPE 16)
+# ============================================================
+class FenetreReseau(tk.Toplevel):
+    """Fenetre de balayage du sous-reseau.
+
+    Permet au serveur de voir quelles machines sont
+    DISPONIBLES sur le reseau et joignables.
+    """
+
+    def __init__(self, parent, port=5001):
+        """Cree la fenetre de detection.
+
+        Args:
+            parent (tk.Widget): Fenetre mere.
+            port (int): Port du service a tester.
+        """
+        super().__init__(parent)
+        self.port = int(port)
+        self.resultat = None
+        self.scan_en_cours = False
+        self.file_scan = queue.Queue()
+
+        self.title("Détection réseau — Intelligent Questionnaire Analyzer")
+        self.geometry("700x520")
+        self.minsize(560, 400)
+        self.configure(bg=COULEUR_FOND)
+        self.transient(parent)
+
+        self._construire()
+        self.protocol("WM_DELETE_WINDOW", self._fermer)
+
+        # Recepition des messages du thread de scan
+        self.after(120, self._verifier_scan)
+
+        # Lancement automatique a l'ouverture
+        self.after(300, self.lancer_scan)
+
+    def _construire(self):
+        """Construit les widgets de la fenetre."""
+        cadre = tk.Frame(self, bg=COULEUR_FOND, padx=14, pady=12)
+        cadre.pack(fill="both", expand=True)
+
+        info = reseau_local()
+
+        # --- Bandeau reseau ---
+        tk.Label(
+            cadre,
+            text="🌐  Machines disponibles sur votre réseau",
+            font=("Helvetica", 14, "bold"),
+            bg=COULEUR_FOND,
+            fg=COULEUR_SERVEUR,
+        ).pack(anchor="w")
+
+        tk.Label(
+            cadre,
+            text=f"Réseau local : {info['ip']}"
+                 f"  /  {info['masque']}  (/{info['prefixe']})"
+                 f"   —   Machine : {info['nom_machine']}"
+                 f"   —   Port testé : {self.port}",
+            font=("Consolas", 9),
+            bg=COULEUR_FOND,
+            fg="#555555",
+        ).pack(anchor="w", pady=(2, 8))
+
+        # --- Barre d'etat + bouton ---
+        barre = tk.Frame(cadre, bg=COULEUR_FOND)
+        barre.pack(fill="x", pady=(0, 8))
+
+        self.bouton_scan = tk.Button(
+            barre,
+            text="🔍 Balayer le réseau",
+            font=("Helvetica", 10, "bold"),
+            bg=COULEUR_SERVEUR,
+            fg="white",
+            activebackground="#6c3483",
+            activeforeground="white",
+            relief="flat",
+            padx=14,
+            pady=7,
+            cursor="hand2",
+            command=self.lancer_scan,
+        )
+        self.bouton_scan.pack(side="left")
+
+        self.var_prog = tk.StringVar(value="Prêt.")
+        tk.Label(
+            barre,
+            textvariable=self.var_prog,
+            font=("Helvetica", 9),
+            bg=COULEUR_FOND,
+            fg="#333333",
+        ).pack(side="left", padx=12)
+
+        self.progression = ttk.Progressbar(
+            barre, orient="horizontal", length=180, mode="determinate"
+        )
+        self.progression.pack(side="right")
+
+        # --- Tableau des machines ---
+        colonnes = ("ip", "nom", "port", "etat")
+        cadre_table = tk.Frame(cadre, bg=COULEUR_FOND)
+        cadre_table.pack(fill="both", expand=True)
+
+        self.table = ttk.Treeview(
+            cadre_table,
+            columns=colonnes,
+            show="headings",
+            height=14,
+        )
+        self.table.heading("ip", text="Adresse IP")
+        self.table.heading("nom", text="Nom réseau")
+        self.table.heading("port", text=f"Port {self.port}")
+        self.table.heading("etat", text="Communication possible")
+
+        self.table.column("ip", width=140, anchor="w", stretch=False)
+        self.table.column("nom", width=230, anchor="w")
+        self.table.column("port", width=90, anchor="center", stretch=False)
+        self.table.column("etat", width=170, anchor="w")
+
+        scroll_v = tk.Scrollbar(cadre_table, orient="vertical",
+                                command=self.table.yview)
+        self.table.configure(yscrollcommand=scroll_v.set)
+
+        self.table.pack(side="left", fill="both", expand=True)
+        scroll_v.pack(side="right", fill="y")
+
+        self.table.tag_configure("moi", background="#e8f6ef")
+        self.table.tag_configure("joignable", background="#eaf2fb")
+        self.table.tag_configure("injoignable", background="#fdecea")
+
+        # --- Legende + pied ---
+        tk.Label(
+            cadre,
+            text="🟢 ma machine   |   🔵 joignable (port ouvert)"
+                 "   |   🔴 visible mais service non joignable"
+                 "   |   ⚪ hors ligne",
+            font=("Helvetica", 9),
+            bg=COULEUR_FOND,
+            fg="#555555",
+        ).pack(anchor="w", pady=(8, 0))
+
+        self.var_resume = tk.StringVar(value="")
+        tk.Label(
+            cadre,
+            textvariable=self.var_resume,
+            font=("Helvetica", 9, "bold"),
+            bg=COULEUR_FOND,
+            fg=COULEUR_TITRE,
+        ).pack(anchor="w", pady=(4, 0))
+
+        # --- Boutons ---
+        pied = tk.Frame(cadre, bg=COULEUR_FOND)
+        pied.pack(fill="x", pady=(8, 0))
+
+        tk.Button(
+            pied,
+            text="✖ Fermer",
+            font=("Helvetica", 10),
+            bg=COULEUR_ERREUR,
+            fg="white",
+            relief="flat",
+            padx=14,
+            pady=7,
+            cursor="hand2",
+            command=self._fermer,
+        ).pack(side="right")
+
+    # --------------------------------------------------------
+    def lancer_scan(self):
+        """Lance le balayage dans un thread (l'UI reste fluide)."""
+        if self.scan_en_cours:
+            return
+
+        self.scan_en_cours = True
+        self.bouton_scan.configure(state="disabled", text="⏳ Balayage...")
+        self.table.delete(*self.table.get_children())
+        self.var_prog.set("Balayage en cours...")
+        self.progression.configure(value=0, maximum=100)
+        self.var_resume.set("")
+
+        thread = threading.Thread(
+            target=self._scan_thread, daemon=True
+        )
+        thread.start()
+
+    def _progression(self, faits, total):
+        """Appele DEPUIS le thread de scan."""
+        try:
+            pct = int(100 * faits / total) if total else 0
+            self.file_scan.put(("prog", pct, faits, total))
+        except Exception:
+            pass
+
+    def _scan_thread(self):
+        """Execution du scan dans le thread secondaire."""
+        try:
+            resultat = scanner_reseau(
+                port=self.port,
+                duree_max=8.0,
+                progression=self._progression,
+            )
+            self.file_scan.put(("fini", resultat))
+        except Exception as e:
+            self.file_scan.put(("erreur", str(e)))
+
+    def _verifier_scan(self):
+        """Recoit les messages du thread de scan."""
+        try:
+            while True:
+                paquet = self.file_scan.get_nowait()
+                type_ = paquet[0]
+
+                if type_ == "prog":
+                    _, pct, faits, total = paquet
+                    self.progression.configure(value=pct)
+                    self.var_prog.set(
+                        f"{faits}/{total} adresses testées..."
+                    )
+
+                elif type_ == "fini":
+                    self._afficher_resultats(paquet[1])
+
+                elif type_ == "erreur":
+                    self.var_prog.set(f"Erreur : {paquet[1]}")
+                    self.scan_en_cours = False
+                    self.bouton_scan.configure(
+                        state="normal", text="🔍 Balayer le réseau"
+                    )
+
+        except queue.Empty:
+            pass
+
+        if self.winfo_exists():
+            self.after(120, self._verifier_scan)
+
+    def _afficher_resultats(self, resultat):
+        """Remplit le tableau avec les resultats du scan."""
+        self.resultat = resultat
+        machines = resultat.get("machines", [])
+
+        self.table.delete(*self.table.get_children())
+
+        nb_joignables = 0
+        for m in machines:
+            if m["ma_machine"]:
+                etat = "🟢 C'est cette machine"
+                tag = "moi"
+                icone_port = "en écoute" if m["port_ouvert"] else "fermé"
+            elif m["port_ouvert"]:
+                etat = "✅ OUI — joignable"
+                tag = "joignable"
+                icone_port = "ouvert"
+                nb_joignables += 1
+            else:
+                etat = "⛔ Service non détecté"
+                tag = "injoignable"
+                icone_port = "fermé"
+
+            self.table.insert(
+                "", "end",
+                values=(m["ip"], m["nom"], icone_port, etat),
+                tags=(tag,),
+            )
+
+        # Machines non vues (hors ligne) : resume seulement
+        total_scan = resultat.get("nb_ips_scannees", 0)
+
+        self.var_prog.set(f"Terminé en {resultat.get('duree', '?')} s")
+        self.progression.configure(value=100)
+
+        moi = next((m for m in machines if m["ma_machine"]), None)
+        etat_moi = ""
+        if moi is not None:
+            etat_moi = (
+                f"  |  port {self.port} EN ÉCOUTE sur cette machine"
+                if moi["port_ouvert"]
+                else f"  |  port {self.port} FERMÉ sur cette machine"
+            )
+
+        self.var_resume.set(
+            f"{total_scan} adresses balayées  →  "
+            f"{len(machines)} machine(s) en vie  →  "
+            f"{nb_joignables} autre(s) poste(s) joignable(s)"
+            f"{etat_moi}"
+        )
+
+        self.scan_en_cours = False
+        self.bouton_scan.configure(
+            state="normal", text="🔍 Balayer le réseau"
+        )
+
+        try:
+            module_serveur.log(
+                f"[RESEAU] Scan termine : {len(machines)} machine(s) "
+                f"detectee(s), {nb_joignables} joignable(s)"
+            )
+        except Exception:
+            pass
+
+    def _fermer(self):
+        """Ferme la fenetre proprement."""
+        self.destroy()
 
 
 class FenetreServeur(tk.Tk):
@@ -73,8 +379,8 @@ class FenetreServeur(tk.Tk):
 
         # Parametres fenetre
         self.title("Serveur — Intelligent Questionnaire Analyzer")
-        self.geometry("780x620")
-        self.minsize(640, 480)
+        self.geometry("780x700")
+        self.minsize(640, 540)
         self.configure(bg=COULEUR_FOND)
 
         self._construire()
@@ -139,6 +445,22 @@ class FenetreServeur(tk.Tk):
             bg=COULEUR_FOND,
             fg="#666666",
         ).pack(anchor="w")
+
+        # --- Detection des machines du reseau (ETAPE 16) ---
+        tk.Button(
+            infos,
+            text="🌐  Détecter les machines disponibles sur le réseau",
+            font=("Helvetica", 10, "bold"),
+            bg=COULEUR_TITRE,
+            fg="white",
+            activebackground="#154360",
+            activeforeground="white",
+            relief="flat",
+            padx=12,
+            pady=7,
+            cursor="hand2",
+            command=self._ouvrir_detection_reseau,
+        ).pack(fill="x", pady=(8, 0))
 
         # --- Etat + statistiques ---
         cadre_etat = tk.Frame(cadre, bg=COULEUR_FOND)
@@ -332,6 +654,21 @@ class FenetreServeur(tk.Tk):
     # ============================================================
     # ACTIONS
     # ============================================================
+    def _ouvrir_detection_reseau(self):
+        """Ouvre (ou ramene au premier plan) la fenetre de scan."""
+        fenetre = getattr(self, "_fenetre_reseau", None)
+        if fenetre is not None and fenetre.winfo_exists():
+            fenetre.lift()
+            fenetre.focus_force()
+            return
+
+        self._fenetre_reseau = FenetreReseau(self, port=self.port)
+        self._ajouter_journal(
+            f"[RESEAU] Detection des machines sur le sous-reseau "
+            f"(port {self.port})...",
+            "info",
+        )
+
     def _redemarrer(self):
         """Redemarre le serveur (utile si le port etait occupe)."""
         self._ajouter_journal("--- Redemarrage du serveur ---", "titre")

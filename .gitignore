@@ -26,6 +26,11 @@ viewer_scroll.png
 config_window.png
 server_window.png
 exe_server.png
+network_scan.png
+installateur.png
+deux_instances.png
+serveur_req.png
+stats_zoom.png
 
 # Construction de l'executable (ETAPE 15)
 # (build/ et dist/ deja ignores ci-dessus)

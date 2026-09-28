@@ -1,5 +1,22 @@
 # Guide de l'exécutable Windows (.exe)
 
+## 0. Deux façons de distribuer le programme
+
+| | **L'exécutable seul** | **L'installateur** |
+|---|---|---|
+| Fichier | `AnalyseurQuestionnaire.exe` (53 Mo) | `Installateur.exe` (67 Mo) |
+| Installation | copier/double-cliquer | assistant + raccourcis |
+| Raccourcis Bureau / Menu | manuels | créés automatiquement |
+| Pare-feu | manuel (§5) | case à cocher |
+| Idéal pour | test rapide | déploiement sur le LAN |
+
+```bat
+build.bat                :: construit l'exécutable
+build_installer.bat      :: construit l'exécutable + l'installateur
+```
+
+---
+
 ## 1. De quoi a-t-on besoin ?
 
 ### Pour **construire** l'exe (une seule machine suffit)
@@ -65,6 +82,71 @@ CONSOLE = False   # interface graphique seule (plus propre)
 ```
 
 Puis relancer `build.bat`.
+
+---
+
+## 2bis. Construire et utiliser l'installateur (ETAPE 16)
+
+### Construction
+
+```bat
+build_installer.bat
+```
+
+ou manuellement :
+
+```bat
+python -m PyInstaller --noconfirm AnalyseurQuestionnaire.spec
+python -m PyInstaller --noconfirm Installateur.spec
+```
+
+> ⚠️ `Installateur.spec` échoue si `dist/AnalyseurQuestionnaire.exe`
+> n'existe pas — l'installateur **embarque** le programme.
+
+### Résultat
+
+```
+dist/
+├── AnalyseurQuestionnaire.exe   ← le programme (53 Mo)
+└── Installateur.exe             ← l'installateur (67 Mo, contient tout)
+```
+
+**Un seul fichier suffit** : `Installateur.exe` contient le programme.
+
+### Ce que fait l'installateur
+
+1. Choix du dossier d'installation
+   (par défaut `C:\Users\<moi>\AnalyseurQuestionnaire` — toujours
+   inscriptible, **aucun droit admin nécessaire**)
+2. Copie le programme + création de `documents/`, `reports/`,
+   `client/reports/`
+3. Raccourci **Bureau** et **Menu Démarrer** (par utilisateur)
+4. Case à cocher : **règle pare-feu** (machine serveur, port configurable)
+5. Sélection optionnelle du fichier **`.env`** (clé API — serveur)
+6. Bouton **▶ Lancer maintenant**
+
+### Installation silencieuse (déploiement sur plusieurs postes)
+
+```bat
+Installateur.exe --dest=C:\Analyseur --bureau --menu --port=5001
+Installateur.exe --dest=C:\Analyseur --env=C:\secrets\.env --pare-feu
+Installateur.exe --aide
+```
+
+| Argument | Effet |
+|---|---|
+| `--dest=CHEMIN` | dossier d'installation |
+| `--env=CHEMIN` | copie le fichier `.env` (clé API) |
+| `--port=N` | port à ouvrir au pare-feu (défaut 5001) |
+| `--pas-bureau` / `--pas-menu` | désactive un raccourci |
+| `--pare-feu` | ajoute la règle pare-feu (admin requis) |
+
+Code de retour : `0` = succès, `1` = échec, `2` = argument invalide.
+
+### Désinstallation
+
+Supprimer le dossier d'installation et les deux raccourcis
+(Bureau + Menu Démarrer). Aucune clé de registre n'est écrite.
 
 ---
 

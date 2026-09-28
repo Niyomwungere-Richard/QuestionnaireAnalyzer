@@ -32,6 +32,10 @@ CONFIG_DEFAUT = {
     "port": 5001,              # port d'ecoute / de connexion
     "serveur_ip": "127.0.0.1", # adresse du serveur (cote client)
     "nom_machine": socket.gethostname(),
+    # ETAPE 16 : si False, la fenetre de choix du role s'affiche
+    # a CHAQUE demarrage (permet de lancer 2 instances sur la
+    # meme machine : une en serveur, une en client).
+    "demarrage_direct": False,
 }
 
 
@@ -59,6 +63,11 @@ def charger_config():
     if resultat.get("role") not in ("serveur", "client"):
         resultat["role"] = None
 
+    # ETAPE 16 : forcer un booleen
+    resultat["demarrage_direct"] = bool(resultat.get(
+        "demarrage_direct", False
+    ))
+
     return resultat
 
 
@@ -79,13 +88,16 @@ def sauver_config(config):
         return False
 
 
-def configurer(role, port=5001, serveur_ip="127.0.0.1"):
+def configurer(role, port=5001, serveur_ip="127.0.0.1",
+               demarrage_direct=False):
     """Cree et enregistre une configuration.
 
     Args:
         role (str): "serveur" ou "client".
         port (int): Port reseau.
         serveur_ip (str): Adresse du serveur (utile si role=client).
+        demarrage_direct (bool): ETAPE 16 - si True, la fenetre de
+            choix du role n'apparait plus au prochain demarrage.
 
     Returns:
         dict: La configuration enregistree.
@@ -95,18 +107,26 @@ def configurer(role, port=5001, serveur_ip="127.0.0.1"):
         "port": int(port),
         "serveur_ip": serveur_ip,
         "nom_machine": socket.gethostname(),
+        "demarrage_direct": bool(demarrage_direct),
     }
     sauver_config(config)
     return config
 
 
 def reinitialiser():
-    """Supprime la configuration (retour a la fenetre de choix)."""
-    if CHEMIN_CONFIG.exists():
-        try:
-            CHEMIN_CONFIG.unlink()
-        except OSError:
-            pass
+    """Retire le role (retour a la fenetre de choix).
+
+    ETAPE 16 : on ne supprime plus tout le fichier — on conserve
+    les parametres reseau (port, adresse IP) et on reininitialise
+    uniquement le role et l'option "demarrage direct".
+    """
+    if not CHEMIN_CONFIG.exists():
+        return
+
+    config = charger_config()
+    config["role"] = None
+    config["demarrage_direct"] = False
+    sauver_config(config)
 
 
 # ============================================================
