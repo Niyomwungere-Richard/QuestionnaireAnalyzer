@@ -1,5 +1,8 @@
 # Intelligent Questionnaire Analyzer
 
+> 📄 **Rapport complet du projet** (du départ à aujourd'hui,
+> pour présentation) : **[RAPPORT_PROJET.md](RAPPORT_PROJET.md)**
+
 ## Description
 
 Application Client/Serveur Python capable de recevoir un questionnaire au format PDF ou Word,
