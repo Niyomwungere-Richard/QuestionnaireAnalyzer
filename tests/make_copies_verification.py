@@ -17,7 +17,7 @@ Sorties :
 
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 DOSSIER = BASE_DIR / "documents_tests"
 DOSSIER.mkdir(exist_ok=True)
 

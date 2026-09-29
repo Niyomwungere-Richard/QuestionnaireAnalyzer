@@ -55,13 +55,44 @@ Seul le serveur communique avec l'API IA : la cle n'existe que sur SA machine.
 
 ## Installation
 
-1. Cloner le projet
-2. Installer les dependances :
-   `pip install -r requirements.txt`
-3. Configurer la cle API dans le fichier `.env` (voir API_KEY_GUIDE.md)
-   — uniquement sur la machine qui fera office de SERVEUR
+### 1. Environnement virtuel (recommandé)
 
-## Creer l'exécutable Windows (.exe)
+```bat
+setup.bat
+```
+
+Ce script :
+1. détecte Python 3 dans le `PATH`
+2. crée l'environnement virtuel **`venv\`** (paquets isolés au projet)
+3. installe toutes les dépendances de `requirements.txt`
+4. vérifie que chaque module s'importe
+
+> **Pourquoi un venv ?** les paquets du projet ne se mélangent pas
+> avec ceux des autres projets, et une mise à jour globale ne peut
+> pas casser ce projet. `venv\` est ignoré par git.
+
+### 2. Lancer le projet
+
+```bat
+venv\Scripts\python.exe main.py
+```
+
+### 3. Configurer la clé API (machine serveur uniquement)
+
+Placer la clé API dans le fichier `.env` (voir API_KEY_GUIDE.md).
+
+<details>
+<summary>Sans environnement virtuel (installation globale)</summary>
+
+```bat
+pip install -r requirements.txt
+python main.py
+```
+`build.bat` et `build_installer.bat` utilisent automatiquement
+`venv\` s'il existe, sinon le Python global.
+</details>
+
+## Créer l'exécutable Windows (.exe)
 
 ```
 build.bat
@@ -145,20 +176,21 @@ Meme machine                          : python main.py --serveur
 
 ## Tests
 
-- `python test_env.py` : Verifie le chargement de .env
-- `python test_grok.py` : Verifie la communication avec l'API IA
-- `python test_documents.py` : Lecture locale PDF/Word -> JSON
-- `python test_ai_analysis.py` : Pipeline JSON -> IA -> JSON
-- `python test_report.py` : Generation du rapport PDF
-- `python test_integration.py` : Pipeline complet Client -> Serveur -> IA -> rapport
-- `python test_multi_clients.py` : Plusieurs clients simultanes (ETAPE 14)
-- `python test_demarrage.py` : Arguments CLI + config demarrage (ETAPE 16)
-- `python test_reseau_ui.py` : Balayage du sous-reseau (ETAPE 16)
-- `python test_installateur.py` : Logique d'installation (ETAPE 16)
+- `python tests/test_env.py` : Verifie le chargement de .env
+- `python tests/test_grok.py` : Verifie la communication avec l'API IA
+- `python tests/test_documents.py` : Lecture locale PDF/Word -> JSON
+- `python tests/test_ai_analysis.py` : Pipeline JSON -> IA -> JSON
+- `python tests/test_report.py` : Generation du rapport PDF
+- `python tests/test_integration.py` : Pipeline complet Client -> Serveur -> IA -> rapport
+- `python tests/test_multi_clients.py` : Plusieurs clients simultanes (ETAPE 14)
+- `python tests/test_demarrage.py` : Arguments CLI + config demarrage (ETAPE 16)
+- `python tests/test_reseau_ui.py` : Balayage du sous-reseau (ETAPE 16)
+- `python tests/test_installateur.py` : Logique d'installation (ETAPE 16)
 
 ## Structure
 
 - `main.py` : point d'entree, arguments CLI, dispatch selon le role
+- `setup.bat` : creation de l'environnement virtuel `venv\` (ETAPE 17)
 - `paths.py` : chemins compatibles script ET .exe (ETAPE 15)
 - `config_manager.py` : configuration locale + detection reseau + test connexion
 - `configuration_window.py` : fenetre de choix du role

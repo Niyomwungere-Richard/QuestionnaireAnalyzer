@@ -12,7 +12,7 @@ Cree :
 
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 DOSSIER_DOCUMENTS = BASE_DIR / "documents_tests"
 DOSSIER_DOCUMENTS.mkdir(exist_ok=True)
 

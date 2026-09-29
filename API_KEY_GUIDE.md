@@ -28,11 +28,11 @@ FREEAI_API_KEY=sk-free-xxxxxxxxxxxxxxxx
 ### Etape 4 : Verifier la configuration
 1. Ouvre un terminal
 2. Va dans le dossier `QuestionnaireAnalyzer/`
-3. Execute : `python test_env.py`
+3. Execute : `python tests/test_env.py`
 4. Tu dois voir : `[OK] FREEAI_API_KEY chargee avec succes`
 
 ### Etape 5 : Tester la communication IA
-1. Execute : `python test_grok.py`
+1. Execute : `python tests/test_grok.py`
 2. Tu dois voir : `[SUCCES] La communication avec l'API fonctionne !`
 
 ## Ce que tu obtiens GRATUITEement

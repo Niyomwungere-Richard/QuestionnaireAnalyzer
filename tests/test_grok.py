@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 # Ajouter le repertoire parent au chemin pour trouver .env
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 # Charger les variables d'environnement depuis .env

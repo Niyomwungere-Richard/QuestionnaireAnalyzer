@@ -15,7 +15,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent
+BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
 import installateur as inst  # noqa: E402

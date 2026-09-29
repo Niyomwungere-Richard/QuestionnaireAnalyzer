@@ -21,7 +21,7 @@ import sys
 import hashlib
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 HOST = "127.0.0.1"

@@ -8,12 +8,12 @@ attend la fin du balayage et capture une capture d'ecran.
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent
+BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
 from server_window import FenetreServeur, FenetreReseau  # noqa: E402
 
-CAPTURE = BASE / "network_scan.png"
+CAPTURE = BASE / "captures" / "network_scan.png"
 
 
 def main():
