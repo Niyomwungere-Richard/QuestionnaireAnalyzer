@@ -239,9 +239,13 @@ class FenetreConfiguration(tk.Tk):
             font=("Helvetica", 10),
         ).pack(side="left", padx=(0, 8))
 
-        self.var_ip_serveur = tk.StringVar(
-            value=self.config_existante.get("serveur_ip", "127.0.0.1")
-        )
+        # 0.0.0.0 = adresse d'ECOUTE du serveur, jamais une adresse
+        # de connexion : les anciens config.json peuvent la contenir,
+        # on propose alors la vraie IP locale a la place.
+        ip_prefill = self.config_existante.get("serveur_ip", "127.0.0.1")
+        if ip_prefill == "0.0.0.0":
+            ip_prefill = obtenir_ip_principale()
+        self.var_ip_serveur = tk.StringVar(value=ip_prefill)
         tk.Entry(
             self.cadre_client,
             textvariable=self.var_ip_serveur,
@@ -485,6 +489,21 @@ class FenetreConfiguration(tk.Tk):
                 )
                 return
 
+            # 0.0.0.0 n'est pas une adresse de connexion (c'est
+            # l'adresse d'ecoute du serveur) : on refuse tout de suite
+            # avec une explication au lieu d'un echec obscur.
+            if ip_serveur == "0.0.0.0":
+                messagebox.showwarning(
+                    "Adresse invalide",
+                    "0.0.0.0 est l'adresse d'ECOUTE du serveur,\n"
+                    "pas une adresse de connexion.\n\n"
+                    "Utilisez 127.0.0.1 (meme machine) ou l'IP "
+                    "locale du serveur\n"
+                    f"(sur cette machine : {obtenir_ip_principale()}).",
+                    parent=self,
+                )
+                return
+
             # Avertissement si la machine se designe elle-meme
             if ip_serveur in obtenir_adresses_ip():
                 if not messagebox.askyesno(
@@ -497,7 +516,10 @@ class FenetreConfiguration(tk.Tk):
                 ):
                     return
         else:
-            ip_serveur = "0.0.0.0"  # le serveur n'a pas besoin d'une IP
+            # On memorise la vraie IP locale (et non 0.0.0.0 qui est
+            # seulement l'adresse d'ecoute) : la prochaine fenetre
+            # CLIENT la proposera comme adresse de connexion.
+            ip_serveur = obtenir_ip_principale()
 
         # Sauvegarder
         demarrage_direct = bool(self.var_direct.get())
