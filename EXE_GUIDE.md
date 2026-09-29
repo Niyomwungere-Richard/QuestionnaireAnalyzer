@@ -24,9 +24,14 @@ build_installer.bat      :: construit l'exécutable + l'installateur
 | Besoin | Détail |
 |---|---|
 | **Python** | 3.10+ installé (ici 3.14) |
-| **PyInstaller** | `pip install pyinstaller` |
-| **Les dépendances** | `pip install -r requirements.txt` |
+| **L'environnement virtuel** | `setup.bat` crée `venv\` + installe tout |
+| *(alternatif)* | `pip install pyinstaller` et `pip install -r requirements.txt` |
 | Le source du projet | dossier `QuestionnaireAnalyzer/` |
+
+> 💡 `setup.bat` crée un **environnement virtuel** : les paquets du
+> projet sont **isolés** de ceux des autres projets. `build.bat` et
+> `build_installer.bat` l'utilisent automatiquement, avec repli sur le
+> Python global s'il n'existe pas.
 
 > ⚠️ **Il ne faut PAS Python sur les machines de destination.**
 > C'est tout l'intérêt du `.exe` : il embarque l'interpréteur et
@@ -53,13 +58,13 @@ build_installer.bat      :: construit l'exécutable + l'installateur
 ### Méthode A — script automatique
 
 ```bat
-build.bat
+build.bat            :: utilise venv\ s'il existe, sinon le Python global
 ```
 
 ### Méthode B — manuelle
 
 ```bat
-python -m PyInstaller --noconfirm AnalyseurQuestionnaire.spec
+venv\Scripts\python.exe -m PyInstaller --noconfirm AnalyseurQuestionnaire.spec
 ```
 
 ### Résultat
@@ -122,7 +127,9 @@ dist/
    `client/reports/`
 3. Raccourci **Bureau** et **Menu Démarrer** (par utilisateur)
 4. Case à cocher : **règle pare-feu** (machine serveur, port configurable)
-5. Sélection optionnelle du fichier **`.env`** (clé API — serveur)
+5. Fichier **`.env`** (clé API) : repris **automatiquement** s'il a été
+   embarqué à la construction — sinon sélection manuelle (bouton
+   Choisir...) ou `--env=`. Le serveur ne redemande plus rien ensuite.
 6. Bouton **▶ Lancer maintenant**
 
 ### Installation silencieuse (déploiement sur plusieurs postes)
@@ -243,9 +250,10 @@ embarqués). C'est normal pour un exécutable Python autonome.
 ## 7. Checklist de livraison
 
 ```
-[ ] python -m PyInstaller --noconfirm AnalyseurQuestionnaire.spec
-[ ] dist/AnalyseurQuestionnaire.exe existe
-[ ] L'exe se lance et affiche la fenêtre de configuration
+[ ] setup.bat            -> venv\ cree, dependances installees, 6/6 modules OK
+[ ] build.bat            -> dist/AnalyseurQuestionnaire.exe genere
+[ ] build_installer.bat  -> dist/Installateur.exe genere
+[ ] L'exe se lance et affiche la fenetre de configuration
 [ ] config.json se crée À CÔTÉ de l'exe (pas dans %TEMP%)
 [ ] Sur le serveur : .env présent à côté de l'exe
 [ ] Le serveur s'ouvre sur 0.0.0.0:5001

@@ -98,6 +98,7 @@
 | Secret | **python-dotenv** (`.env`) | la clé n'est jamais dans le code |
 | Exe Windows | **PyInstaller** | autonome, Python non requis |
 | Tests | scripts `test_*.py` | une validation à chaque étape |
+| **Isolation** | **`venv/`** via `setup.bat` | les paquets du projet ne se mélangent pas avec ceux des autres projets |
 
 **32 fichiers Python · 9 263 lignes (6 884 hors tests) · 17 commits**
 
@@ -385,6 +386,32 @@ AnalyseurQuestionnaire.exe --client --serveur-ip=127.0.0.1
 **Tests :** `test_demarrage.py` **28/28** · `test_installateur.py` **17/17**
 
 **Commit :** `b237d7a`
+
+---
+
+## Étape 17 — Environnement virtuel (`venv\`)
+
+Jusqu'ici, toutes les dépendances étaient installées **dans le Python
+global** de la machine — fonctionnel, mais contraire aux bonnes pratiques.
+
+* **`setup.bat`** : détecte Python, crée `venv\`, installe
+  `requirements.txt`, **vérifie chaque module**
+* `venv\` est **ignoré par git** (déjà présent dans `.gitignore`)
+* **`build.bat`** et **`build_installer.bat`** détectent `venv\`
+  automatiquement et **retombent sur le Python global** s'il n'existe pas
+* README et ce rapport mis à jour
+
+```bat
+setup.bat                              :: cree venv\ + dependances
+venv\Scripts\python.exe main.py        :: lance le projet
+build.bat                              :: construit l'exe (via venv)
+```
+
+> **Impact sur les livrables : aucun.** PyInstaller embarque les
+> paquets qu'il trouve, venv ou non — les `.exe` sont identiques.
+
+**Test :** les 11 scripts de test + la construction des 2 `.exe`
+relancés **depuis le venv** → résultats inchangés.
 
 ---
 

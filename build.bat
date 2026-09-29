@@ -1,6 +1,8 @@
 @echo off
+setlocal
 REM ============================================================
 REM  Construction de l'executable Windows - ETAPE 15
+REM  (ETAPE 17 : utilise l'environnement virtuel venv\)
 REM
 REM  Utilisation :
 REM      build.bat
@@ -9,20 +11,35 @@ REM  Resultat :
 REM      dist\AnalyseurQuestionnaire.exe
 REM ============================================================
 
+cd /d "%~dp0"
+
 echo.
 echo ============================================================
 echo   CONSTRUCTION DE L'EXECUTABLE WINDOWS
 echo ============================================================
 echo.
 
-REM Python utilise par le projet
-set PYTHON=C:\Users\ZEBRA\AppData\Local\Programs\Python\Python314\python.exe
+REM ------------------------------------------------------------
+REM ETAPE 17 : on utilise l'environnement virtuel du projet s'il
+REM existe (venv\), sinon on retombe sur Python global.
+REM ------------------------------------------------------------
+set "PYTHON=%~dp0venv\Scripts\python.exe"
+if exist "%PYTHON%" goto :python_trouve
+
+echo [INFO] venv\ introuvable -> utilisation du Python global.
+echo        Lancez setup.bat pour creer l'environnement virtuel.
+set "PYTHON=python"
+
+:python_trouve
+echo [INFO] Python utilise : %PYTHON%
+echo.
 
 REM Verifier PyInstaller
 "%PYTHON%" -m PyInstaller --version >nul 2>&1
 if errorlevel 1 (
     echo [ERREUR] PyInstaller n'est pas installe.
-    echo          Lancez : pip install pyinstaller
+    echo          Lancez : setup.bat
+    echo          ou      : pip install pyinstaller
     pause
     exit /b 1
 )
