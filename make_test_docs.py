@@ -6,14 +6,14 @@ Utilisation :
     python make_test_docs.py
 
 Cree :
-    - documents/questionnaire_test.pdf
-    - documents/questionnaire_test.docx
+    - documents_tests/questionnaire_test.pdf
+    - documents_tests/questionnaire_test.docx
 """
 
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-DOSSIER_DOCUMENTS = BASE_DIR / "documents"
+DOSSIER_DOCUMENTS = BASE_DIR / "documents_tests"
 DOSSIER_DOCUMENTS.mkdir(exist_ok=True)
 
 # Le texte du questionnaire de test

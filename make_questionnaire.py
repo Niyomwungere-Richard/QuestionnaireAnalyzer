@@ -14,13 +14,13 @@ Utilisation :
     python make_questionnaire.py
 
 Sortie :
-    documents/questionnaire_systemes.pdf
+    documents_tests/questionnaire_systemes.pdf
 """
 
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-DOSSIER_DOCUMENTS = BASE_DIR / "documents"
+DOSSIER_DOCUMENTS = BASE_DIR / "documents_tests"
 DOSSIER_DOCUMENTS.mkdir(exist_ok=True)
 
 NOM_FICHIER = "questionnaire_systemes.pdf"
@@ -62,7 +62,7 @@ QUESTIONS = [
 
 
 def creer_pdf():
-    """Cree le questionnaire PDF dans documents/."""
+    """Cree le questionnaire PDF dans documents_tests/."""
     from reportlab.lib.pagesizes import A4
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet

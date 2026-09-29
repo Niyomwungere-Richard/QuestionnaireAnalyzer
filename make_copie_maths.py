@@ -5,13 +5,13 @@ Copie de verification MATHEMATIQUES (demande utilisateur).
   - Q5 (x2 - 9 = 0) : l'etudiant ne donne que x = 3, il manque x = -3
     -> verdict attendu : PARTIEL.
 
-Sortie : documents/copie_D_maths.docx
+Sortie : documents_tests/copie_D_maths.docx
 """
 
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-DOSSIER = BASE_DIR / "documents"
+DOSSIER = BASE_DIR / "documents_tests"
 DOSSIER.mkdir(exist_ok=True)
 
 TITRE = "Controle - Mathematiques"

@@ -54,7 +54,7 @@ def main():
         print()
 
     # Verifier que le document de test existe
-    fichier_test = BASE_DIR / "documents" / "questionnaire_test.pdf"
+    fichier_test = BASE_DIR / "documents_tests" / "questionnaire_test.pdf"
     if not fichier_test.exists():
         print("[ERREUR] Document de test introuvable")
         print("  -> Lance : python make_test_docs.py")

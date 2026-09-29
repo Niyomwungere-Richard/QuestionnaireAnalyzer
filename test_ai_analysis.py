@@ -347,7 +347,7 @@ def main():
     print()
 
     # Verifier que le document de test existe
-    chemin_document = BASE_DIR / "documents" / "questionnaire_test.pdf"
+    chemin_document = BASE_DIR / "documents_tests" / "questionnaire_test.pdf"
     if not chemin_document.exists():
         print("[ERREUR] Document de test introuvable")
         print("  -> Lance : python make_test_docs.py")

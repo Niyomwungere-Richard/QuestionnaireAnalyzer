@@ -25,9 +25,9 @@ HOST = "127.0.0.1"
 PORT = 5001
 
 DOCS = [
-    BASE_DIR / "documents" / "questionnaire_test.pdf",
-    BASE_DIR / "documents" / "questionnaire_systemes.pdf",
-    BASE_DIR / "documents" / "questionnaire_test.docx",
+    BASE_DIR / "documents_tests" / "questionnaire_test.pdf",
+    BASE_DIR / "documents_tests" / "questionnaire_systemes.pdf",
+    BASE_DIR / "documents_tests" / "questionnaire_test.docx",
 ]
 
 

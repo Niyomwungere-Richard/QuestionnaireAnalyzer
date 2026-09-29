@@ -10,15 +10,15 @@ Utilisation :
     venv/Scripts/python.exe make_copies_verification.py
 
 Sorties :
-    documents/copie_A_reseaux.docx
-    documents/copie_B_systemes.docx
-    documents/copie_C_sql.docx
+    documents_tests/copie_A_reseaux.docx
+    documents_tests/copie_B_systemes.docx
+    documents_tests/copie_C_sql.docx
 """
 
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-DOSSIER = BASE_DIR / "documents"
+DOSSIER = BASE_DIR / "documents_tests"
 DOSSIER.mkdir(exist_ok=True)
 
 COPIES = {

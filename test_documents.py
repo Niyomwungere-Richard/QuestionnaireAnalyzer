@@ -30,7 +30,7 @@ from server.document_handler import (
     sauvegarder_json,
 )
 
-DOSSIER_DOCUMENTS = BASE_DIR / "documents"
+DOSSIER_DOCUMENTS = BASE_DIR / "documents_tests"
 
 
 def test_lecture_pdf():

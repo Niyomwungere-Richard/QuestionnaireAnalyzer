@@ -18,19 +18,13 @@ env/
 documents/*
 !documents/.gitkeep
 
-# Captures de test
-interface_test.png
-interface_scroll.png
-viewer_test.png
-viewer_scroll.png
-config_window.png
-server_window.png
-exe_server.png
-network_scan.png
-installateur.png
-deux_instances.png
-serveur_req.png
-stats_zoom.png
+# Questionnaires de test regenerables (voir make_*.py)
+documents_tests/*
+!documents_tests/.gitkeep
+
+# Captures d'ecran de test
+captures/*
+!captures/.gitkeep
 
 # Construction de l'executable (ETAPE 15)
 # (build/ et dist/ deja ignores ci-dessus)
