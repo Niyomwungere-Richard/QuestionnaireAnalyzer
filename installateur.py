@@ -8,7 +8,8 @@ Il embarque le programme (AnalyseurQuestionnaire.exe) et :
     2. Cree les dossiers de donnees (documents/, reports/, ...)
     3. Cree les raccourcis Bureau + Menu Demarrer
     4. Ajoute optionnellement une regle pare-feu Windows
-    5. Copie optionnellement le fichier .env (cle API, machine serveur)
+    5. Copie le fichier .env (cle API) : celui choisi par
+       l'utilisateur, sinon celui embarque a la construction
     6. Propose de lancer le programme a la fin
 
 Utilisation (mode script, pour developpement) :
@@ -88,6 +89,31 @@ def taille_lisible(octets):
         valeur /= 1024
         index += 1
     return f"{valeur:.1f} {unite[index]}".replace(".", ",")
+
+
+def chemin_env_embarque():
+    """Localise le .env embarque avec l'installateur, s'il existe.
+
+    En mode .exe, PyInstaller extrait les donnees embarquees dans
+    _MEIPASS ; en mode script, on cherche dans dist/ puis a la racine.
+
+    Returns:
+        Path|None: Le .env embarque, ou None s'il est absent.
+    """
+    candidats = []
+    if getattr(sys, "frozen", False):
+        candidats.append(
+            Path(getattr(sys, "_MEIPASS",
+                         Path(sys.executable).parent)) / ".env"
+        )
+    else:
+        base = Path(__file__).resolve().parent
+        candidats.append(base / "dist" / ".env")
+        candidats.append(base / ".env")
+    for chemin in candidats:
+        if chemin.exists():
+            return chemin
+    return None
 
 
 def est_administrateur():
@@ -317,6 +343,13 @@ def installer(destination, options, journal, rapport):
     journal("[4/6] Fichier de configuration ...")
     rapport(50)
     chemin_env = options.get("env")
+    if not chemin_env:
+        # Aucun .env choisi : on utilise celui embarque avec
+        # l'installateur ( s'il existe) pour ne plus le redemander.
+        embarque = chemin_env_embarque()
+        if embarque is not None:
+            chemin_env = str(embarque)
+            journal("      .env embarque detecte : copie automatique")
     if chemin_env:
         try:
             shutil.copy2(chemin_env, destination / ".env")
@@ -554,7 +587,9 @@ class FenetreInstallateur(tk.Tk):
 
         tk.Label(
             env_frame,
-            text="Contient la cle API. Le CLIENT n'en a pas besoin.",
+            text="Contient la cle API. Le CLIENT n'en a pas besoin.\n"
+                 "Si un .env est embarque dans l'installateur, "
+                 "il est repris automatiquement.",
             font=("Helvetica", 8, "italic"),
             bg=FOND, fg="#888888",
         ).pack(anchor="w", pady=(0, 4))
@@ -562,7 +597,12 @@ class FenetreInstallateur(tk.Tk):
         ligne_env = tk.Frame(env_frame, bg=FOND)
         ligne_env.pack(fill="x")
 
-        self.var_env = tk.StringVar(value="")
+        # Pre-remplissage avec le .env embarque (s'il existe) :
+        # l'utilisateur n'a plus rien a choisir dans le cas courant.
+        env_detecte = chemin_env_embarque()
+        self.var_env = tk.StringVar(
+            value=str(env_detecte) if env_detecte is not None else ""
+        )
         tk.Entry(
             ligne_env, textvariable=self.var_env,
             font=("Consolas", 9),
@@ -772,11 +812,10 @@ class FenetreInstallateur(tk.Tk):
 
             conseils = (
                 " prochaines etapes :\n"
-                "  1. Machine SERVEUR : placez le fichier .env "
-                "(cle API) a cote du programme\n"
-                "     puis double-cliquez sur AnalyseurQuestionnaire.exe\n"
-                "  2. Machine CLIENT : double-cliquez simplement sur "
-                "le programme\n"
+                "  1. Le fichier .env (cle API) a ete installe a cote\n"
+                "     du programme : le SERVEUR n'a plus rien a configurer\n"
+                "     (sinon, placez votre .env a cote du programme)\n"
+                "  2. Double-cliquez sur AnalyseurQuestionnaire.exe\n"
                 "  3. Choisissez le role (SERVEUR / CLIENT) dans la "
                 "fenetre de depart\n"
                 "  4. Pour deux instances sur la meme machine : lancez "

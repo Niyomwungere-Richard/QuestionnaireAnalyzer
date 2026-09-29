@@ -16,12 +16,20 @@ echo   CONSTRUCTION DE L'INSTALLATEUR WINDOWS
 echo ============================================================
 echo.
 
-set PYTHON=C:\Users\ZEBRA\AppData\Local\Programs\Python\Python314\python.exe
+set "PYTHON=%~dp0venv\Scripts\python.exe"
+if exist "%PYTHON%" goto :python_trouve
+
+echo [INFO] venv\ introuvable -> utilisation du Python global.
+set "PYTHON=python"
+
+:python_trouve
+echo [INFO] Python utilise : %PYTHON%
+echo.
 
 "%PYTHON%" -m PyInstaller --version >nul 2>&1
 if errorlevel 1 (
     echo [ERREUR] PyInstaller n'est pas installe.
-    echo          Lancez : pip install pyinstaller
+    echo          Lancez : setup.bat
     pause
     exit /b 1
 )
@@ -68,11 +76,12 @@ echo   Programme    : dist\AnalyseurQuestionnaire.exe  (%TAILLE2% o)
 echo   Installateur : dist\Installateur.exe            (%TAILLE% o)
 echo.
 echo   POUR INSTALLER SUR UN AUTRE POSTE :
-echo     1. Copier Installateur.exe (il contient tout)
+echo     1. Copier Installateur.exe (il contient tout, .env inclus)
 echo     2. Double-cliquer dessus
 echo     3. Choisir le dossier + les options
-echo     4. Machine SERVEUR : fournir le fichier .env
-echo        (cle API) dans la fenetre d'installation
+echo     4. Le .env embarque est copie automatiquement ;
+echo        un autre .env peut etre choisi manuellement
+echo        (il sera utilise en priorite, sans doublon)
 echo ============================================================
 echo.
 pause

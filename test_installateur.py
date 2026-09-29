@@ -141,7 +141,33 @@ verifier("message d'echec present",
          str(lignes2[:3]))
 
 # --------------------------------------------------
-print("\n7) Nettoyage")
+print("\n7) .env embarque repris automatiquement (env=None)")
+# --------------------------------------------------
+embarque = inst.chemin_env_embarque()
+verifier(".env embarque detecte", embarque is not None,
+         str(embarque))
+
+destination2 = racine / "ProgrammeSansEnvChoisi"
+lignes3 = []
+ok3 = inst.installer(
+    destination2,
+    {"bureau": False, "menu": False, "pare_feu": False,
+     "port": 5001, "env": None},
+    journal=lignes3.append,
+    rapport=lambda v, t="": None,
+)
+verifier("installation sans .env choisi reussie", ok3 is True)
+if embarque is not None:
+    copie = destination2 / ".env"
+    verifier(".env copie automatiquement", copie.exists())
+    verifier("contenu identique a l'embarque",
+             copie.exists() and
+             copie.read_bytes() == embarque.read_bytes())
+else:
+    print("         (aucun .env embarque : ignore)")
+
+# --------------------------------------------------
+print("\n8) Nettoyage")
 # --------------------------------------------------
 try:
     shutil.rmtree(racine, ignore_errors=True)

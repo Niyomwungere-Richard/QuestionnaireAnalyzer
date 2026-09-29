@@ -44,6 +44,20 @@ EXCLUS = [
 # Le programme est embarque comme donnee, extrait dans _MEIPASS
 DONNEES = [(PROGRAMME, ".")]
 
+# Le fichier .env (cle API) est embarque s'il existe AU MOMENT de la
+# construction : l'installation le copiera automatiquement a cote du
+# programme, sans le redemander a chaque installation ni a chaque
+# demarrage.
+# ATTENTION SECURITE : la cle se retrouve DANS Installateur.exe.
+# Ne diffusez cet installateur qu'aux machines de confiance.
+FICHIER_ENV = ".env"
+if os.path.exists(FICHIER_ENV):
+    DONNEES.append((FICHIER_ENV, "."))
+    print("  + .env embarque dans l'installateur")
+else:
+    print("  AVERTISSEMENT : .env absent, il faudra le fournir "
+          "manuellement (option --env= ou bouton Choisir...).")
+
 analyse = Analysis(
     [ENTREE],
     pathex=[],
